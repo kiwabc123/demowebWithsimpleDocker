@@ -1,0 +1,40 @@
+# Node modules - don't copy to container
+node_modules
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# Logs
+logs
+*.log
+*.log.*
+
+# Build output (if you build locally and copy build files)
+dist
+build
+
+# Environment files (optional - if you don't want to include .env in container)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE / OS files
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Git files
+.git
+.gitignore
+
+# Tests and coverage
+coverage
+*.spec.*
+*.test.*
+
+# Misc
+*.bak
+*.tmp
