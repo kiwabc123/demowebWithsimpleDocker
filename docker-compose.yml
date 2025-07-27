@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2019-latest
@@ -20,7 +22,11 @@ services:
       - sqlserver
     volumes:
       - ./init-db/init.sql:/init.sql
-    entrypoint: ["/bin/bash", "-c", "sleep 10; /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P 'P@ssw0rd@1' -i /init.sql"]
+    entrypoint: ["/bin/bash", "-c", "\
+      until /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P 'P@ssw0rd@1' -Q 'SELECT 1' > /dev/null 2>&1; do \
+        echo 'Waiting for SQL Server to be ready...'; sleep 5; \
+      done; \
+      /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P 'P@ssw0rd@1' -i /init.sql"]
     networks:
       - app-network
 
@@ -33,17 +39,18 @@ services:
       - app-network
     environment:
       DB_SERVER: sqlserver
-      DB_DATABASE: mydb
+      DB_DATABASE: testdb
       DB_UID: sa
       DB_PWD: P@ssw0rd@1
-    
- 
+
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
     ports:
       - "3000:3000"
     networks:
       - app-network
+
 
 networks:
   app-network:
