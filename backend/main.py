@@ -1,12 +1,13 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 import pyodbc
 import os
-from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
+# CORS setup
 origins = [
-    "http://localhost:3000",  # your frontend origin
+    "http://localhost:3000",
 ]
 
 app.add_middleware(
@@ -17,26 +18,40 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-def get_conn():
-    return pyodbc.connect(
-        f"DRIVER={{ODBC Driver 17 for SQL Server}};"
-        f"SERVER={os.getenv('DB_SERVER')};"
-        f"DATABASE={os.getenv('DB_DATABASE')};"
-        f"UID={os.getenv('DB_UID')};"
-        f"PWD={os.getenv('DB_PWD')}"
-    )
+# Global connection object
+conn = None
+
+@app.on_event("startup")
+def startup():
+    global conn
+    try:
+        conn = pyodbc.connect(
+            f"DRIVER={{ODBC Driver 17 for SQL Server}};"
+            f"SERVER={os.getenv('DB_SERVER')};"
+            f"DATABASE={os.getenv('DB_DATABASE')};"
+            f"UID={os.getenv('DB_UID')};"
+            f"PWD={os.getenv('DB_PWD')};"
+        )
+        print("✅ Database connection established.")
+    except Exception as e:
+        print("❌ Failed to connect to database:", str(e))
+
+
+@app.on_event("shutdown")
+def shutdown():
+    global conn
+    if conn:
+        conn.close()
+        print("🔌 Database connection closed.")
 
 @app.get("/datasets")
 def get_datasets():
     try:
-        conn = get_conn()
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM datasets")
         columns = [column[0] for column in cursor.description]
         rows = cursor.fetchall()
-        result = [dict(zip(columns, row)) for row in rows]
         cursor.close()
-        conn.close()
-        return result
+        return [dict(zip(columns, row)) for row in rows]
     except Exception as e:
         return {"error": str(e)}
